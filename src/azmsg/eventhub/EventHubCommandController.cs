@@ -34,10 +34,10 @@ namespace azmsg.eventhub
 
             // eventhub send
             var evtHubSendCommand = new Command("send");
-
             evtHubSendCommand.Add(new Option<string>("--message"));
             evtHubSendCommand.Add(new Option<string>("--from-file"));
-            evtHubSendCommand.Handler = CommandHandler.Create<string, string>(Send);
+            evtHubSendCommand.Add(new Option<string>("--eventhub-name", "override event hub name in context"));
+            evtHubSendCommand.Handler = CommandHandler.Create<string, string, string>(Send);
             eventhubCommand.AddCommand(evtHubSendCommand);
 
             // eventhub set-context
@@ -60,7 +60,8 @@ namespace azmsg.eventhub
             messageCommand.Add(new Option<int>("--limit", "number of messages to retrieve"));
             messageCommand.Add(new Option<int>("--message-timeout", "message timeout in seconds"));
             messageCommand.Add(new Option("--follow", "stream latest messages"));
-            messageCommand.Handler = CommandHandler.Create<bool, int, int>(WatchMessage);
+            messageCommand.Add(new Option<string>("--eventhub-name", "override event hub name in context"));
+            messageCommand.Handler = CommandHandler.Create<bool, int, int, string>(WatchMessage);
             eventhubCommand.AddCommand(messageCommand);
 
             // simulate
@@ -85,11 +86,11 @@ namespace azmsg.eventhub
             await Task.CompletedTask;
         }
 
-        public async Task WatchMessage(bool follow, int limit, int messageTimeout)
+        public async Task WatchMessage(bool follow, int limit, int messageTimeout, string eventhubName)
         {
             var cc = new EventHubConsumerCommands(CurrentContext, service);
 
-            await cc.WatchMessage(follow, limit, messageTimeout);
+            await cc.WatchMessage(follow, limit, messageTimeout, eventhubName);
 
 
             //Console.WriteLine($"WatchMessage with follow {follow}, limit {limit} and timeout {messageTimeout}");
@@ -118,17 +119,17 @@ namespace azmsg.eventhub
 
         }
 
-        public async Task Send(string message, string fromFile)
+        public async Task Send(string message, string fromFile, string eventhubName)
         {
             var pc = new EventHubProducerCommands(CurrentContext, service);
 
             if (fromFile != null)
             {
-                await pc.SendFromFile(fromFile);
+                await pc.SendFromFile(fromFile, eventhubName);
             }
             else
             {
-                await pc.Send(message);
+                await pc.Send(message, eventhubName);
             }
             
         }

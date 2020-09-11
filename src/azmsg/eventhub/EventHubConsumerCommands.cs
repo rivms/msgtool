@@ -18,7 +18,7 @@ namespace azmsg.eventhub
         }
 
 
-        public async Task WatchMessage(bool follow, int limit, int messageTimeout)
+        public async Task WatchMessage(bool follow, int limit, int messageTimeout, string eventHubName)
         {
             Console.WriteLine($"WatchMessage with follow {follow}, limit {limit} and timeout {messageTimeout}");
 
@@ -26,17 +26,24 @@ namespace azmsg.eventhub
 
             var eu = new EventHubUtilities();
 
+            var hubName = currentContext.EventHubName;
+
+            if (eventHubName != null)
+            {
+                hubName = eventHubName;
+            }
+
             try
             {
                 if (follow)
                 {
                     //await FollowMessages(messageTimeout);
-                    await eu.FollowMessages(messageTimeout, currentContext.ConsumerGroup, currentContext.ConnectionString, currentContext.EventHubName);
+                    await eu.FollowMessages(messageTimeout, currentContext.ConsumerGroup, currentContext.ConnectionString, hubName);
                 }
                 else
                 {
                     //await WatchMessages(limit, messageTimeout);
-                    await eu.WatchMessagesWithLimit(limit, messageTimeout, currentContext.ConsumerGroup, currentContext.ConnectionString, currentContext.EventHubName);
+                    await eu.WatchMessagesWithLimit(limit, messageTimeout, currentContext.ConsumerGroup, currentContext.ConnectionString, hubName);
                 }
             }
             catch (Exception ex)

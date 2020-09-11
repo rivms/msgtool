@@ -34,7 +34,7 @@ namespace azmsg.eventhub
                 };
 
                 var messageString = JsonSerializer.Serialize(dataPoint);
-                await Send(messageString);
+                await Send(messageString, null);
 
 
                 if (n > 0)
@@ -53,16 +53,23 @@ namespace azmsg.eventhub
             await Task.CompletedTask;
         }
 
-        public async Task Send(string message)
+        public async Task Send(string message, string eventHubName)
         {
             var config = service.LoadConfig();
 
             this.currentContext = config.EventHubContexts[config.CurrentEventHubContext];
 
+            var hubName = currentContext.EventHubName;
+
+            if (eventHubName != null)
+            {
+                hubName = eventHubName;
+            }
+
             //await RunAsync(currentContext.ConnectionString, currentContext.EventHubName);
             try
             {
-                await using (var producerClient = new EventHubProducerClient(currentContext.ConnectionString, currentContext.EventHubName))
+                await using (var producerClient = new EventHubProducerClient(currentContext.ConnectionString, hubName))
                 {
                     // Create a batch of events 
                     using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
@@ -74,7 +81,7 @@ namespace azmsg.eventhub
 
                     // Use the producer client to send the batch of events to the event hub
                     await producerClient.SendAsync(eventBatch);
-                    Console.WriteLine($"Message sent: {message}");
+                    Console.WriteLine($"Message sent to event hub {hubName}: {message}");
                 }
             }
             catch (Exception ex)
@@ -83,17 +90,24 @@ namespace azmsg.eventhub
             }
         }
 
-        public async Task SendFromFile(string path)
+        public async Task SendFromFile(string path, string eventHubName)
         {
             var config = service.LoadConfig();
 
             this.currentContext = config.EventHubContexts[config.CurrentEventHubContext];
 
+            var hubName = currentContext.EventHubName;
+
+            if (eventHubName != null)
+            {
+                hubName = eventHubName;
+            }
+
             //await RunAsync(currentContext.ConnectionString, currentContext.EventHubName);
             try
             {
                 var message = File.ReadAllText(path);
-                await using (var producerClient = new EventHubProducerClient(currentContext.ConnectionString, currentContext.EventHubName))
+                await using (var producerClient = new EventHubProducerClient(currentContext.ConnectionString, hubName))
                 {
                     // Create a batch of events 
                     using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
@@ -105,7 +119,7 @@ namespace azmsg.eventhub
 
                     // Use the producer client to send the batch of events to the event hub
                     await producerClient.SendAsync(eventBatch);
-                    Console.WriteLine($"Message sent: {message}");
+                    Console.WriteLine($"Message sent to event hub {hubName}: {message}");
                 }
             }
             catch (Exception ex)
