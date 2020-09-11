@@ -28,3 +28,6 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
       working-directory: ${{env.working-directory}}
+    - name: Publish
+      run:  dotnet publish -p:PublishProfile=FolderProfile
+      working-directory: ${{env.working-directory}}
