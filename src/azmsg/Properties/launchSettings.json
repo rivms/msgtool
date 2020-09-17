@@ -2,7 +2,7 @@
   "profiles": {
     "azmsg": {
       "commandName": "Project",
-      "commandLineArgs": "eventhub send dummy-message --file \"C:\\temp\\adx\\sample.json\""
+      "commandLineArgs": "iothub d2c --message  \"hello world\" --transport-type amqp_websocket_only "
     }
   }
 }

@@ -4,6 +4,7 @@ using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Producer;
 using Azure.Storage.Blobs;
+using Microsoft.Azure.Devices.Client;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -68,7 +69,11 @@ namespace azmsg.iothub
             var d2cCommand = new Command("d2c");
             d2cCommand.Add(new Option<string>("--message", "text to send"));
             d2cCommand.Add(new Option<string>("--from-file", "send contents of file"));
-            d2cCommand.Handler = CommandHandler.Create<string, string>(Device2CloudMessage);
+            d2cCommand.Add(new Option<TransportType>("--transport-type", "Override the default, options are as per Microsoft.Azure.Devices.Client.TransportType"));
+
+
+
+            d2cCommand.Handler = CommandHandler.Create<string, string, TransportType>(Device2CloudMessage);
             iothubCommand.AddCommand(d2cCommand);
             return iothubCommand;
         }
@@ -78,17 +83,17 @@ namespace azmsg.iothub
             this.service = service;
         }
 
-        public async Task Device2CloudMessage(string message, string fromFile)
+        public async Task Device2CloudMessage(string message, string fromFile, TransportType transportType)
         {
             var pc = new IoTHubProducerCommands(CurrentContext, service);
 
             if (fromFile != null)
             {
-                await pc.Device2CloudMessageFromFile(fromFile);
+                await pc.Device2CloudMessageFromFile(fromFile, transportType);
             }
             else
             {
-                await pc.Device2CloudMessage(message);
+                await pc.Device2CloudMessage(message, transportType);
             }            
         }
 

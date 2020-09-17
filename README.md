@@ -8,8 +8,8 @@ Commands are organised into a hierarchy, View the list `.\azmsg.exe --help`
 |-------|------------|-----------|
 |iothub |set-context|Set a named set of defaults for iothub commands|
 |iothub |use-context|Activate a named set of defaultas for iothub commands|
-|iothub |message    |Listen for a fixed number of messages or without limit. |
-|iothub |d2c        |Send a message from the cli or from a file. Device identity is set via context|
+|iothub |message    |Listen for a fixed number of messages or without limit |
+|iothub |d2c        |Send a message from the cli or from a file. Device identity is set via context. Transport settings can be specified|
 |eventhub|set-context|Set a named set of defaults for eventhub commands|
 |eventhub|use-context|Activate a named set of defaultas for iothub commands|
 |eventhub|send|Send a message from the cli or from a file. Context event hub name can be overridden|
