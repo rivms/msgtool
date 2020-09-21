@@ -2,7 +2,7 @@
   "profiles": {
     "azmsg": {
       "commandName": "Project",
-      "commandLineArgs": "iothub d2c --message  \"hello world\" --transport-type amqp_websocket_only "
+      "commandLineArgs": "powerbi stream --from-file \"C:\\temp\\msgtool\\pbimsgmany.json\""
     }
   }
 }

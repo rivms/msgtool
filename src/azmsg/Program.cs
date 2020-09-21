@@ -1,5 +1,6 @@
 ﻿using azmsg.eventhub;
 using azmsg.iothub;
+using azmsg.powerbi;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.CommandLine;
@@ -81,6 +82,7 @@ namespace azmsg
             collection.AddTransient<ConfigService>((sp) => { return new ConfigService(configPath); });
             collection.AddSingleton<ICommandController, IoTHubCommandController>();
             collection.AddSingleton<ICommandController, EventHubCommandController>();
+            collection.AddSingleton<ICommandController, PowerBICommandController>();
         }
 
 
