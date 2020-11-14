@@ -31,7 +31,7 @@ namespace azmsg.iothub
                 {
                     //await FollowMessages(messageTimeout);
                     await eu.FollowMessages(messageTimeout, currentContext.ConsumerGroup, 
-                        currentContext.ConnectionString, 
+                        currentContext.EventHubEndpoint, 
                         currentContext.EventHubName);
                 }
                 else
@@ -39,7 +39,7 @@ namespace azmsg.iothub
                     //await WatchMessages(limit, messageTimeout);
                     await eu.WatchMessagesWithLimit(limit, messageTimeout, 
                         currentContext.ConsumerGroup, 
-                        currentContext.ConnectionString, currentContext.EventHubName);
+                        currentContext.EventHubEndpoint, currentContext.EventHubName);
                 }
             }
             catch (Exception ex)

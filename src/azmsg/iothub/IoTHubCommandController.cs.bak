@@ -16,8 +16,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace azmsg.iothub
@@ -44,7 +42,7 @@ namespace azmsg.iothub
             // set-context
             var iotHubContextCommand = new Command("set-context");
             iotHubContextCommand.AddArgument(new Argument<string>("name"));
-            iotHubContextCommand.Add(new Option<string>("--eventhub-endpoint"));
+            iotHubContextCommand.Add(new Option<string>("--connection-string"));
             iotHubContextCommand.Add(new Option<string>("--eventhub-name"));
             iotHubContextCommand.Add(new Option<string>("--storage-connection"));
             iotHubContextCommand.Add(new Option<string>("--consumer-group"));
@@ -52,11 +50,6 @@ namespace azmsg.iothub
             iotHubContextCommand.Handler = CommandHandler.Create<string, string, string, string, string, string>(SetContext);
             iothubCommand.AddCommand(iotHubContextCommand);
 
-            // get-context
-            var iotHubGetContextCommand = new Command("get-context");
-            iotHubGetContextCommand.Add(new Option<string>("--name"));
-            iotHubGetContextCommand.Handler = CommandHandler.Create<string>(GetContext);
-            iothubCommand.AddCommand(iotHubGetContextCommand);
 
             // use-context
             var iotHubUseContextCommand = new Command("use-context");
@@ -77,19 +70,11 @@ namespace azmsg.iothub
             d2cCommand.Add(new Option<string>("--message", "text to send"));
             d2cCommand.Add(new Option<string>("--from-file", "send contents of file"));
             d2cCommand.Add(new Option<TransportType>("--transport-type", "Override the default, options are as per Microsoft.Azure.Devices.Client.TransportType"));
+
+
+
             d2cCommand.Handler = CommandHandler.Create<string, string, TransportType>(Device2CloudMessage);
             iothubCommand.AddCommand(d2cCommand);
-
-            // simulate
-            var simulateCommand = new Command("simulate-device");
-            simulateCommand.Add(new Option<string>("--device-type", () => { return "temperature"; }, "Supported types: [\"temperature\", \"temperature_pair\"]"));
-            simulateCommand.Add(new Option<int>("--message-delay", () => { return 5000; }, "Delay between messages in milliseconds. Default 5 seconds"));
-            simulateCommand.Add(new Option<int>("--n", () => { return -1; }, "Number of messages to send. Default is unbounded"));
-            simulateCommand.Add(new Option<string>("--ca-file", "CA cert to be trusted"));
-            simulateCommand.Handler = CommandHandler.Create<string, int, int, string>(SimulateDevice);
-            iothubCommand.Add(simulateCommand);
-
-            
             return iothubCommand;
         }
 
@@ -111,37 +96,6 @@ namespace azmsg.iothub
                 await pc.Device2CloudMessage(message, transportType);
             }            
         }
-
-        public async Task SimulateDevice(string deviceType, int messageDelay, int n, string caFile)
-        {
-            var producer = new IoTHubProducerCommands(CurrentContext, service);
-
-
-            if (!String.IsNullOrWhiteSpace(caFile))
-            {
-                Console.WriteLine($"Registering CA certificate: {caFile}");
-                var caCert = await CertificateUtilities.LoadPemCACertificate(caFile, null);
-                CertificateUtilities.RegisterCert2(caCert);
-            }
-
-            if (string.Compare(deviceType, "temperature", true) == 0)
-            {
-                await producer.
-                    SimulateTemperatureSensor(messageDelay, n);
-            }
-            else if (string.Compare(deviceType, "temperature_pair", true) == 0)
-            {
-                await producer.
-                    SimulateTemperatureSensorPair(messageDelay, n);
-            }
-            else
-            {
-                Console.WriteLine($"No matching device type: {deviceType}");
-            }
-
-            await Task.CompletedTask;
-        }
-
 
         public async Task WatchMessage(bool follow, int limit, int messageTimeout)
         {
@@ -320,13 +274,13 @@ namespace azmsg.iothub
 
 
         public void SetContext(string name,
-            string eventhubEndpoint,
+            string connectionString,
             string eventHubName,
             string storageConnection,
             string consumerGroup,
             string deviceConnectionString)
         {
-            Console.WriteLine($"Setting context {name} with eventhub endpoint {eventhubEndpoint} and hub {eventHubName}");
+            Console.WriteLine($"Setting context {name} with connection {connectionString} and hub {eventHubName}");
             var config = service.LoadConfig();
             IoTHubContext ctxt = null;
             if (!config.IoTHubContexts.TryGetValue(name, out ctxt))
@@ -334,9 +288,9 @@ namespace azmsg.iothub
                 ctxt = new IoTHubContext();
             }
 
-            if (eventhubEndpoint != null)
+            if (connectionString != null)
             {
-                ctxt.EventHubEndpoint = eventhubEndpoint;
+                ctxt.ConnectionString = connectionString;
             }
 
             if (eventHubName != null)
@@ -378,46 +332,13 @@ namespace azmsg.iothub
 
         }
 
-        public void GetContext(string name)
-        {
-            var config = service.LoadConfig();
-
-            var options = new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            };
-
-            if (String.IsNullOrWhiteSpace(name))
-            {
-                foreach (var kv in config.IoTHubContexts)
-                {
-                    Console.WriteLine($"{kv.Key} : {JsonSerializer.Serialize(kv.Value, options)}");
-                }
-            }
-            else
-            {
-                if (config.IoTHubContexts.ContainsKey(name))
-                {
-                    service.UpdateConfig(config);
-                    Console.WriteLine(JsonSerializer.Serialize(config.IoTHubContexts[name], options));
-                }
-                else
-                {
-                    Console.WriteLine($"Context {name} not found");
-                }
-            }
-
-        }
-
-
-
         public async Task Send(string message, string messageFile)
         {
             var config = service.LoadConfig();
 
             try
             {
-                await using (var producerClient = new EventHubProducerClient(CurrentContext.EventHubEndpoint, CurrentContext.EventHubName))
+                await using (var producerClient = new EventHubProducerClient(CurrentContext.ConnectionString, CurrentContext.EventHubName))
                 {
                     // Create a batch of events 
                     using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();

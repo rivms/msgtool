@@ -54,10 +54,108 @@ namespace azmsg.iothub
         //    await Task.CompletedTask;
         //}
 
+        public string CreateSimulatedSensorPairDataPoint(IEnumerator<double> tempSimulator)
+        {
+            var hostName = Dns.GetHostName().ToLower();
+            var tag1 = $"{hostName}_tmp_p23";
+            var tag2 = $"{hostName}_tmp_ambient";
+            var ts = DateTime.Now;
+            tempSimulator.MoveNext();
+            var temp1 = tempSimulator.Current;
+            tempSimulator.MoveNext();
+            var temp2 = tempSimulator.Current;
+
+
+            var dataPoint = $@"[
+                {{
+                    ""tag"": ""{tag1}"",
+                    ""ts"": ""{ts.ToString("O")}"",
+                    ""value"": {temp1}
+                }},    
+                {{
+                    ""tag"": ""{tag2}"",
+                    ""ts"": ""{ts.ToString("O")}"",
+                    ""value"": {temp2}
+                }}
+            ]";
+
+            return dataPoint;
+        }
+
+
+        public async Task SimulateTemperatureSensorPair(int messageDelay, int n)
+        {
+            var deviceSimulator = new DeviceTelemetrySimulator();
+            var tempEnumerator = deviceSimulator.Temperature(true).GetEnumerator();
+
+            int messageCount = 0;
+            while (true)
+            {
+                var messageString = CreateSimulatedSensorPairDataPoint(tempEnumerator);
+                await Device2CloudMessage(messageString, TransportType.Mqtt);
+
+
+                if (n > 0)
+                {
+                    messageCount = messageCount + 1;
+                    if (messageCount >= n)
+                    {
+                        Console.WriteLine("All messages sent");
+                        break;
+                    }
+                }
+
+                await Task.Delay(messageDelay);
+            }
+
+            await Task.CompletedTask;
+        }
+
+        public async Task SimulateTemperatureSensor(int messageDelay, int n)
+        {
+            var deviceSimulator = new DeviceTelemetrySimulator();
+
+            int messageCount = 0;
+            foreach (var temperature in deviceSimulator.Temperature(true))
+            {
+                var dataPoint = new
+                {
+                    Temperature = temperature
+                };
+
+                var messageString = JsonSerializer.Serialize(dataPoint);
+                await Device2CloudMessage(messageString, TransportType.Mqtt);
+
+
+                if (n > 0)
+                {
+                    messageCount = messageCount + 1;
+                    if (messageCount >= n)
+                    {
+                        Console.WriteLine("All messages sent");
+                        break;
+                    }
+                }
+
+                await Task.Delay(messageDelay);
+            }
+
+            await Task.CompletedTask;
+        }
+
         public async Task Device2CloudMessage(string message, TransportType transportType)
         {
-            var transportSettings = CreateTransportSettingsFromName(transportType, null);
-            var deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString, new ITransportSettings[] { transportSettings });
+            DeviceClient deviceClient;
+
+            if (transportType != null)
+            {
+                var transportSettings = CreateTransportSettingsFromName(transportType, null);
+                deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString, new ITransportSettings[] { transportSettings });
+            }
+            else
+            {
+                deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString);
+            }
 
             var d2cMessage = new Message(Encoding.UTF8.GetBytes(message));           
 

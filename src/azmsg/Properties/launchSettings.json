@@ -2,7 +2,7 @@
   "profiles": {
     "azmsg": {
       "commandName": "Project",
-      "commandLineArgs": "powerbi stream --from-file \"C:\\temp\\msgtool\\pbimsgmany.json\""
+      "commandLineArgs": "iothub d2c --from-file \"C:\\temp\\adt-demo\\temperature\\room0-000.json\""
     }
   }
 }

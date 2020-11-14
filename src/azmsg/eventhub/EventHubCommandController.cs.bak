@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -49,12 +48,6 @@ namespace azmsg.eventhub
             eventHubContextCommand.Add(new Option<string>("--consumer-group"));
             eventHubContextCommand.Handler = CommandHandler.Create<string, string, string, string>(SetContext);
             eventhubCommand.AddCommand(eventHubContextCommand);
-
-            // get-context
-            var eventHubGetContextCommand = new Command("get-context");
-            eventHubGetContextCommand.Add(new Option<string>("--name"));
-            eventHubGetContextCommand.Handler = CommandHandler.Create<string>(GetContext);
-            eventhubCommand.AddCommand(eventHubGetContextCommand);
 
             // use-context
             var eventHubUseContextCommand = new Command("use-context");
@@ -184,37 +177,6 @@ namespace azmsg.eventhub
                 Console.WriteLine($"Using context {contextName}");
             }
 
-
-        }
-
-        public void GetContext(string name)
-        {
-            var config = service.LoadConfig();
-
-            var options = new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            };
-
-            if (String.IsNullOrWhiteSpace(name))
-            {
-                foreach (var kv in config.EventHubContexts)
-                {
-                    Console.WriteLine($"{kv.Key} : {JsonSerializer.Serialize(kv.Value, options)}");
-                }
-            }
-            else
-            {
-                if (config.EventHubContexts.ContainsKey(name))
-                {
-                    service.UpdateConfig(config);
-                    Console.WriteLine(JsonSerializer.Serialize(config.EventHubContexts[name], options));
-                }
-                else
-                {
-                    Console.WriteLine($"Context {name} not found");
-                }
-            }
 
         }
 

@@ -49,8 +49,7 @@ namespace azmsg.common
                     await foreach (var pe in mergedPartitions.Take<PartitionEvent>(maxMessages))
                     {
 
-                        //Console.WriteLine($"Event received on partition {pe.Partition.PartitionId} with body {Encoding.UTF8.GetString(pe.Data.Body.ToArray())}");
-                        DisplayMessage(pe);
+                        Console.WriteLine($"Event received on partition {pe.Partition.PartitionId} with body {Encoding.UTF8.GetString(pe.Data.Body.ToArray())}");
                         messageCount = messageCount + 1;
                         if (messageCount >= maxMessages)
                         {
@@ -64,65 +63,6 @@ namespace azmsg.common
                     Console.WriteLine($"{ex}");
                 }
             }
-        }
-
-        public static bool IsNumeric(string s)
-        {
-            decimal d;
-            return decimal.TryParse(s, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.CurrentCulture, out d);
-        }
-
-        public static string FormatPayloadField(string payload)
-        {
-            if (payload.StartsWith("{"))
-            {
-                return payload;
-            };
-
-            if (IsNumeric(payload))
-            {
-                return payload;
-            }
-
-            return $"\"{payload}\"";
-        }
-
-        public void DisplayMessage(PartitionEvent pe)
-        {
-            var payload = Encoding.UTF8.GetString(pe.Data.Body.ToArray());
-            var outputMessage = $@"{{
-                ""body"": {FormatPayloadField(payload)},
-                ""enqueuedTime"": ""{pe.Data.EnqueuedTime}"",
-                ""systemProperties"": {{
-                    {pe.Data.SystemProperties.Count}
-                }}
-                ""properties"": {{ 
-                {pe.Data.Properties.Count}
-                }}
-            }}";
-
-            var sb = new StringBuilder();
-            var padding1 = "  ";
-            var padding2 = "    ";
-
-            sb.AppendLine("{");
-            sb.Append(padding1 + "\"body\": ");
-            sb.Append(FormatPayloadField(payload));
-            sb.AppendLine(",");
-            sb.AppendLine(padding1 + "\"systemProperties\": {");
-            foreach(var kv in pe.Data.SystemProperties)
-            {
-                sb.AppendLine(padding2 + $"\"{kv.Key}\": {FormatPayloadField(kv.Value.ToString())}");
-            }
-            sb.AppendLine(padding1 + "}");
-            sb.AppendLine(padding1 + "\"properties\": {");
-            foreach (var kv in pe.Data.Properties)
-            {
-                sb.AppendLine(padding2 + $"\"{kv.Key}\": \"{kv.Value}\"");
-            }
-            sb.AppendLine(padding1 + "}");
-            sb.AppendLine("}");
-            Console.WriteLine(sb);
         }
 
         public async Task FollowMessages(int messageTimeout, string consumerGroup, string connectionString, string eventHubName)
@@ -165,8 +105,7 @@ namespace azmsg.common
                     await foreach (var pe in mergedPartitions)
                     {
 
-                        //Console.WriteLine($"Event received on partition {pe.Partition.PartitionId} with body {Encoding.UTF8.GetString(pe.Data.Body.ToArray())}");
-                        DisplayMessage(pe);
+                        Console.WriteLine($"Event received on partition {pe.Partition.PartitionId} with body {Encoding.UTF8.GetString(pe.Data.Body.ToArray())}");
                         messageCount = messageCount + 1;
 
                     }
