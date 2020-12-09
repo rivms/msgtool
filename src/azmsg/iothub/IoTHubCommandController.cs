@@ -107,13 +107,14 @@ namespace azmsg.iothub
                 await pc.Device2CloudMessageFromFile(fromFile, transportType);
             }
             else
-            {
-                await pc.Device2CloudMessage(message, transportType);
+            {                
+                await pc.Device2CloudSingleMessage(message, transportType);
             }            
         }
 
         public async Task SimulateDevice(string deviceType, int messageDelay, int n, string caFile)
         {
+            
             var producer = new IoTHubProducerCommands(CurrentContext, service);
 
 
@@ -146,6 +147,7 @@ namespace azmsg.iothub
         public async Task WatchMessage(bool follow, int limit, int messageTimeout)
         {
             var cc = new IoTHubConsumerCommands(CurrentContext, service);
+
 
             await cc.WatchMessage(follow, limit, messageTimeout);
 

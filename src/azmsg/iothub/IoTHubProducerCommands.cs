@@ -88,11 +88,12 @@ namespace azmsg.iothub
             var deviceSimulator = new DeviceTelemetrySimulator();
             var tempEnumerator = deviceSimulator.Temperature(true).GetEnumerator();
 
+            DeviceClient dc = CreateDeviceClient(TransportType.Mqtt);
             int messageCount = 0;
             while (true)
             {
                 var messageString = CreateSimulatedSensorPairDataPoint(tempEnumerator);
-                await Device2CloudMessage(messageString, TransportType.Mqtt);
+                await Device2CloudMessage(messageString, dc, "UTF-8", "application/json");
 
 
                 if (n > 0)
@@ -115,6 +116,8 @@ namespace azmsg.iothub
         {
             var deviceSimulator = new DeviceTelemetrySimulator();
 
+            DeviceClient dc = CreateDeviceClient(TransportType.Mqtt);
+
             int messageCount = 0;
             foreach (var temperature in deviceSimulator.Temperature(true))
             {
@@ -124,7 +127,7 @@ namespace azmsg.iothub
                 };
 
                 var messageString = JsonSerializer.Serialize(dataPoint);
-                await Device2CloudMessage(messageString, TransportType.Mqtt);
+                await Device2CloudMessage(messageString, dc, "UTF-8", "application/json");
 
 
                 if (n > 0)
@@ -143,13 +146,14 @@ namespace azmsg.iothub
             await Task.CompletedTask;
         }
 
-        public async Task Device2CloudMessage(string message, TransportType transportType)
+
+        private DeviceClient CreateDeviceClient(TransportType? transportType)
         {
             DeviceClient deviceClient;
 
             if (transportType != null)
             {
-                var transportSettings = CreateTransportSettingsFromName(transportType, null);
+                var transportSettings = CreateTransportSettingsFromName(transportType.Value, null);
                 deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString, new ITransportSettings[] { transportSettings });
             }
             else
@@ -157,10 +161,54 @@ namespace azmsg.iothub
                 deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString);
             }
 
-            var d2cMessage = new Message(Encoding.UTF8.GetBytes(message));           
+            return deviceClient;
+        }
 
-            await deviceClient.SendEventAsync(d2cMessage);
-            Console.WriteLine($"Message with transport type {transportType} sent: {message}");
+
+        public async Task Device2CloudSingleMessage(string message, TransportType transportType)
+        {
+            var dc = CreateDeviceClient(transportType);
+
+            await Device2CloudMessage(message, dc, "UTF-8", null);
+        }
+
+        public async Task Device2CloudMessage(string message, DeviceClient deviceClient, string contentEncoding, string contentType)
+        {
+            //DeviceClient deviceClient;
+
+            //if (transportType != null)
+            //{
+            //    var transportSettings = CreateTransportSettingsFromName(transportType, null);
+            //    deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString, new ITransportSettings[] { transportSettings });
+            //}
+            //else
+            //{
+            //    deviceClient = DeviceClient.CreateFromConnectionString(currentContext.DeviceConnectionString);
+            //}
+
+            var d2cMessage = new Message(Encoding.UTF8.GetBytes(message));
+
+            if (contentEncoding != null)
+            {
+                d2cMessage.ContentEncoding = contentEncoding;
+            }
+
+            if (contentType != null)
+            {
+                d2cMessage.ContentType = contentType;
+            }
+
+            try
+            {
+                await deviceClient.SendEventAsync(d2cMessage);
+                Console.WriteLine($"Message sent: {message}");
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"Error sending message: {ex}");
+                throw;
+            }
+            
 
             await Task.CompletedTask; 
         }

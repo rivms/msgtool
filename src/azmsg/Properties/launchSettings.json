@@ -2,7 +2,7 @@
   "profiles": {
     "azmsg": {
       "commandName": "Project",
-      "commandLineArgs": "iothub d2c --from-file \"C:\\temp\\adt-demo\\temperature\\room0-000.json\""
+      "commandLineArgs": "iothub simulate-device --device-type temperature_pair --ca-file \"\"C:\\temp\\latency\\cli\\pki_iot_rootca_ca.pem\" "
     }
   }
 }
