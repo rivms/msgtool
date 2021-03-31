@@ -2,7 +2,7 @@
   "profiles": {
     "azmsg": {
       "commandName": "Project",
-      "commandLineArgs": "iothub simulate-device --device-type temperature --ca-file \"C:\\temp\\latency\\cli\\pki_iot_rootca_ca.pem\" --device-context thermostat67 thermostat68 --pattern sine"
+      "commandLineArgs": "iothub message --follow --context iothubtodtdapr"
     }
   }
 }

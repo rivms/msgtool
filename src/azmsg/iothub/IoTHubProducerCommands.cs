@@ -140,6 +140,7 @@ namespace azmsg.iothub
                 }
 
                 int messageCount = 0;
+                Console.WriteLine("TimeStamp,Sensor,Telemetry");
                 while (true)
                 {
                     for (int i = 0; i < deviceContext.Length; i++)
@@ -152,9 +153,10 @@ namespace azmsg.iothub
                             Temperature = temperature
                         };
 
-                        var messageString = JsonSerializer.Serialize(dataPoint);
-
-                        await Device2CloudMessage(messageString, deviceClients[i], "UTF-8", "application/json", deviceContext[i]);
+                        //var messageString = JsonSerializer.Serialize(dataPoint);                        
+                        var message = string.Format("{0},{1},{2}", DateTime.Now, deviceContext[i], temperature);
+                        //await Device2CloudMessage(messageString, deviceClients[i], "UTF-8", "application/json", deviceContext[i]);
+                        await Device2CloudMessage(message, deviceClients[i], "UTF-8", "application/json", null, "{1}");
                     }
 
                     if (n > 0)
@@ -270,7 +272,7 @@ namespace azmsg.iothub
             await Device2CloudMessage(message, dc, "UTF-8", null);
         }
 
-        public async Task Device2CloudMessage(string message, DeviceClient deviceClient, string contentEncoding, string contentType, string contextMessage = null)
+        public async Task Device2CloudMessage(string message, DeviceClient deviceClient, string contentEncoding, string contentType, string contextMessage = null, string messageFormat = "Message sent [{0}]: {1}")
         {
             //DeviceClient deviceClient;
 
@@ -299,15 +301,16 @@ namespace azmsg.iothub
             try
             {
                 await deviceClient.SendEventAsync(d2cMessage);
-                if (contextMessage != null)
-                {
-                    Console.WriteLine($"Message sent [{contextMessage}]: {message}");
-                }
-                else
-                {
-                    Console.WriteLine($"Message sent: {message}");
-                }
-                
+                Console.WriteLine(string.Format(messageFormat, contextMessage, message));
+                //if (contextMessage != null)
+                //{
+                //    Console.WriteLine($"Message sent [{contextMessage}]: {message}");      
+                //}
+                //else
+                //{
+                //    Console.WriteLine($"Message sent: {message}");
+                //}
+
             }
             catch (Exception ex)
             {

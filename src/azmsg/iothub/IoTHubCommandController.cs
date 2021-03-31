@@ -78,7 +78,8 @@ namespace azmsg.iothub
             messageCommand.Add(new Option<int>("--limit", "number of messages to retrieve"));
             messageCommand.Add(new Option<int>("--message-timeout", "message timeout in seconds"));
             messageCommand.Add(new Option("--follow", "stream latest messages"));
-            messageCommand.Handler = CommandHandler.Create<bool, int, int>(WatchMessage);
+            messageCommand.Add(new Option<string>("--context", "context for reading messages"));
+            messageCommand.Handler = CommandHandler.Create<bool, int, int, string>(WatchMessage);
             iothubCommand.AddCommand(messageCommand);
 
             // d2c
@@ -164,8 +165,19 @@ namespace azmsg.iothub
         }
 
 
-        public async Task WatchMessage(bool follow, int limit, int messageTimeout)
+        public async Task WatchMessage(bool follow, int limit, int messageTimeout, string context)
         {
+            var listenContext = CurrentContext;
+
+            if (!String.IsNullOrWhiteSpace(context))
+            {
+                var config = service.LoadConfig();
+
+                if (!config.IoTHubContexts.TryGetValue(context, out listenContext))
+                {
+                    throw new Exception($"Invalid context name: {context}");
+                }
+            }
             var cc = new IoTHubConsumerCommands(CurrentContext, service);
 
 
