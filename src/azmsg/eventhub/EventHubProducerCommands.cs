@@ -23,10 +23,10 @@ namespace azmsg.eventhub
 
         public async Task SimulateTemperatureSensor(int messageDelay, int n)
         {
-            var deviceSimulator = new DeviceTelemetrySimulator();
+            var deviceSimulator = DeviceTelemetryFactory.CreateTemperatureSimulator("none", "", true);
 
             int messageCount = 0;
-            foreach (var temperature in deviceSimulator.Temperature(true))
+            foreach (var temperature in deviceSimulator.Measure())
             {
                 var dataPoint = new
                 {

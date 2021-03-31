@@ -4,9 +4,17 @@ using System.Text;
 
 namespace azmsg.common
 {
-    class DeviceTelemetrySimulator
+
+    class DeviceTelemetrySimulator : IDeviceTelemetrySimulator
     {
-        public IEnumerable<double> Temperature(bool celcius)
+        private readonly bool celcius;
+
+        public DeviceTelemetrySimulator(bool celcius)
+        {
+            this.celcius = celcius;
+        }
+
+        public IEnumerable<double> Measure()
         {
             double avgTemperature = celcius ? 21.11D : 70.0D;
 

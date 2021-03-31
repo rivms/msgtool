@@ -36,6 +36,15 @@ namespace azmsg.iothub
             }
         }
 
+        private string CurrentContextName
+        {
+            get
+            {
+                var config = service.LoadConfig();
+                return config.CurrentIoTHubContext;
+            }
+        }
+
         public Command CreateCommand()
         {
             var iothubCommand = new Command("iothub");
@@ -86,7 +95,10 @@ namespace azmsg.iothub
             simulateCommand.Add(new Option<int>("--message-delay", () => { return 5000; }, "Delay between messages in milliseconds. Default 5 seconds"));
             simulateCommand.Add(new Option<int>("--n", () => { return -1; }, "Number of messages to send. Default is unbounded"));
             simulateCommand.Add(new Option<string>("--ca-file", "CA cert to be trusted"));
-            simulateCommand.Handler = CommandHandler.Create<string, int, int, string>(SimulateDevice);
+            simulateCommand.Add(new Option<string[]>("--device-context", "List of context names to generate simulated data for. Separate context names with spaces"));
+            simulateCommand.Add(new Option<string>("--pattern", () => { return "none"; }, "Supported patterns: [\"none\", \"sine\"]"));
+            simulateCommand.Add(new Option<string>("--pattern-period", "Cycle time for pattern generator"));
+            simulateCommand.Handler = CommandHandler.Create<string, int, int, string, string[], string, string>(SimulateDevice);
             iothubCommand.Add(simulateCommand);
 
             
@@ -112,7 +124,7 @@ namespace azmsg.iothub
             }            
         }
 
-        public async Task SimulateDevice(string deviceType, int messageDelay, int n, string caFile)
+        public async Task SimulateDevice(string deviceType, int messageDelay, int n, string caFile, string[] deviceContext, string pattern, string patternPeriod)
         {
             
             var producer = new IoTHubProducerCommands(CurrentContext, service);
@@ -127,8 +139,16 @@ namespace azmsg.iothub
 
             if (string.Compare(deviceType, "temperature", true) == 0)
             {
-                await producer.
-                    SimulateTemperatureSensor(messageDelay, n);
+                if (deviceContext == null || deviceContext.Length == 0)
+                {
+                    await producer.
+                    SimulateTemperatureSensor(messageDelay, n, pattern, patternPeriod);
+                }
+                else
+                {
+                    await producer.SimulateMultipleTemperatureSensors(deviceContext, messageDelay, n, pattern, patternPeriod);
+                }
+                
             }
             else if (string.Compare(deviceType, "temperature_pair", true) == 0)
             {
@@ -395,6 +415,8 @@ namespace azmsg.iothub
                 {
                     Console.WriteLine($"{kv.Key} : {JsonSerializer.Serialize(kv.Value, options)}");
                 }
+
+                Console.WriteLine($"\nCurrent context: {CurrentContextName}");
             }
             else
             {

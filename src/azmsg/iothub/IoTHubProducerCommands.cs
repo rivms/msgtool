@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -85,8 +86,8 @@ namespace azmsg.iothub
 
         public async Task SimulateTemperatureSensorPair(int messageDelay, int n)
         {
-            var deviceSimulator = new DeviceTelemetrySimulator();
-            var tempEnumerator = deviceSimulator.Temperature(true).GetEnumerator();
+            var deviceSimulator = DeviceTelemetryFactory.CreateTemperatureSimulator("none", "", true);
+            var tempEnumerator = deviceSimulator.Measure().GetEnumerator();
 
             DeviceClient dc = CreateDeviceClient(TransportType.Mqtt);
             int messageCount = 0;
@@ -112,14 +113,85 @@ namespace azmsg.iothub
             await Task.CompletedTask;
         }
 
-        public async Task SimulateTemperatureSensor(int messageDelay, int n)
+
+        public async Task SimulateMultipleTemperatureSensors(string[] deviceContext, int messageDelay, int n, string pattern, string patternPeriod)
         {
-            var deviceSimulator = new DeviceTelemetrySimulator();
+            var deviceSimulators = new IDeviceTelemetrySimulator[deviceContext.Length];
+            var deviceTemperature = new IEnumerator<double>[deviceContext.Length];
+            var deviceClients = new DeviceClient[deviceContext.Length];
+
+            try
+            {
+
+
+
+                for (int i = 0; i < deviceContext.Length; i++)
+                {
+                    deviceSimulators[i] = DeviceTelemetryFactory.CreateTemperatureSimulator(pattern, patternPeriod, true);
+                    deviceTemperature[i] = deviceSimulators[i].Measure().GetEnumerator();
+                    var client = CreateDeviceClient(deviceContext[i], TransportType.Mqtt);
+
+                    if (client == null)
+                    {
+                        Console.WriteLine($"Device context {deviceContext[i]} not found");
+                        return;
+                    }
+                    deviceClients[i] = client;
+                }
+
+                int messageCount = 0;
+                while (true)
+                {
+                    for (int i = 0; i < deviceContext.Length; i++)
+                    {
+                        deviceTemperature[i].MoveNext();
+                        var temperature = deviceTemperature[i].Current;
+
+                        var dataPoint = new
+                        {
+                            Temperature = temperature
+                        };
+
+                        var messageString = JsonSerializer.Serialize(dataPoint);
+
+                        await Device2CloudMessage(messageString, deviceClients[i], "UTF-8", "application/json", deviceContext[i]);
+                    }
+
+                    if (n > 0)
+                    {
+                        messageCount = messageCount + 1;
+                        if (messageCount >= n)
+                        {
+                            Console.WriteLine("All messages sent");
+                            break;
+                        }
+                    }
+
+                    await Task.Delay(messageDelay);
+                }
+
+            }
+            finally
+            {
+                // Clean up
+                foreach (var e in deviceTemperature)
+                {
+                    e.Dispose();
+                }
+            }
+            
+
+            await Task.CompletedTask;
+        }
+
+        public async Task SimulateTemperatureSensor(int messageDelay, int n, string pattern, string patternPeriod)
+        {
+            var deviceSimulator = DeviceTelemetryFactory.CreateTemperatureSimulator(pattern.ToLower(), patternPeriod, true);
 
             DeviceClient dc = CreateDeviceClient(TransportType.Mqtt);
 
             int messageCount = 0;
-            foreach (var temperature in deviceSimulator.Temperature(true))
+            foreach (var temperature in deviceSimulator.Measure())
             {
                 var dataPoint = new
                 {
@@ -146,6 +218,32 @@ namespace azmsg.iothub
             await Task.CompletedTask;
         }
 
+        private DeviceClient CreateDeviceClient(string contextName, TransportType? transportType)
+        {
+            DeviceClient deviceClient;
+
+            var config = service.LoadConfig();
+
+            IoTHubContext context = null;
+
+            if (!config.IoTHubContexts.TryGetValue(contextName, out context))
+            {
+                return null;
+            }
+
+            if (transportType != null)
+            {
+                var transportSettings = CreateTransportSettingsFromName(transportType.Value, null);
+                deviceClient = DeviceClient.CreateFromConnectionString(context.DeviceConnectionString, new ITransportSettings[] { transportSettings });
+            }
+            else
+            {
+                deviceClient = DeviceClient.CreateFromConnectionString(context.DeviceConnectionString);
+            }
+
+            return deviceClient;
+
+        }
 
         private DeviceClient CreateDeviceClient(TransportType? transportType)
         {
@@ -172,7 +270,7 @@ namespace azmsg.iothub
             await Device2CloudMessage(message, dc, "UTF-8", null);
         }
 
-        public async Task Device2CloudMessage(string message, DeviceClient deviceClient, string contentEncoding, string contentType)
+        public async Task Device2CloudMessage(string message, DeviceClient deviceClient, string contentEncoding, string contentType, string contextMessage = null)
         {
             //DeviceClient deviceClient;
 
@@ -201,7 +299,15 @@ namespace azmsg.iothub
             try
             {
                 await deviceClient.SendEventAsync(d2cMessage);
-                Console.WriteLine($"Message sent: {message}");
+                if (contextMessage != null)
+                {
+                    Console.WriteLine($"Message sent [{contextMessage}]: {message}");
+                }
+                else
+                {
+                    Console.WriteLine($"Message sent: {message}");
+                }
+                
             }
             catch (Exception ex)
             {
