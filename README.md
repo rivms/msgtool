@@ -55,10 +55,10 @@ Sending a message using a file
 
 Streaming messages and overriding the default hub name
 ```
-.\azmsg.exe eventhub --follow --eventhub-name "anotherhub"
+.\azmsg.exe eventhub message --follow --eventhub-name "anotherhub"
 ```
 
 Listening for the next 5 messages using the hub name setup in the context
 ```
-.\azmsg.exe eventhub --limit 5
+.\azmsg.exe eventhub message --limit 5
 ```
