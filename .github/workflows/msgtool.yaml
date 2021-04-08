@@ -22,8 +22,6 @@ on:
       - '**/*.md'
       - '**/*.gitignore'
       - '**/*.gitattributes'
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -57,3 +55,9 @@ jobs:
     - name: Publish
       run:  dotnet publish -p:PublishProfile=FolderProfile
       working-directory: ${{env.working-directory}}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with: 
+        name: published
+        path: ${{env.working-directory}}/azmsg/bin/Release/net5.0/publish/
+
