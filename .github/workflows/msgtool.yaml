@@ -52,12 +52,18 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
       working-directory: ${{env.working-directory}}
-    - name: Publish
-      run:  dotnet publish -p:PublishProfile=FolderProfile
+    - name: Publish winx64
+      run:  dotnet publish -p:PublishProfile=winx64
+      working-directory: ${{env.working-directory}}
+    - name: Publish linuxx64
+      run:  dotnet publish -p:PublishProfile=linuxx64
+      working-directory: ${{env.working-directory}}
+    - name: Publish osxx64
+      run:  dotnet publish -p:PublishProfile=osxx64
       working-directory: ${{env.working-directory}}
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with: 
         name: published
-        path: ${{env.working-directory}}/azmsg/bin/Release/net5.0/publish/
+        path: ${{env.working-directory}}/msgtool/bin/Release/net5.0/publish/
 
