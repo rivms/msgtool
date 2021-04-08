@@ -65,6 +65,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with: 
         name: published
-        path: /home/runner/work/msgtool/src/azmsg/bin/Release/net5.0/publish/
+        path: /home/runner/work/msgtool/msgtool/src/azmsg/bin/Release/net5.0/publish/
     
 
