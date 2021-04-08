@@ -52,18 +52,28 @@ jobs:
     - name: Test
       run: dotnet test --no-restore --verbosity normal
       working-directory: ${{env.working-directory}}
-    - name: Publish winx64
+    - name: Publish win-x64
       run:  dotnet publish -p:PublishProfile=winx64
       working-directory: ${{env.working-directory}}
-    #- name: Publish linuxx64
-    #  run:  dotnet publish -p:PublishProfile=linuxx64
-    #  working-directory: ${{env.working-directory}}
-    #- name: Publish osxx64
-    #  run:  dotnet publish -p:PublishProfile=osxx64
-    #  working-directory: ${{env.working-directory}}
-    - name: Upload artifacts
+    - name: Publish linux-x64
+      run:  dotnet publish -p:PublishProfile=linuxx64
+      working-directory: ${{env.working-directory}}
+    - name: Publish osx-x64
+      run:  dotnet publish -p:PublishProfile=osxx64
+      working-directory: ${{env.working-directory}}
+    - name: Upload win-x64 artifacts
       uses: actions/upload-artifact@v2
       with: 
-        name: published
-        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/
+        name: win-x64
+        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/win-x64/
+    - name: Upload linuxx64 artifacts
+      uses: actions/upload-artifact@v2
+      with: 
+        name: linux-x64
+        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/win-x64/        
+    - name: Upload osx-x64 artifacts
+      uses: actions/upload-artifact@v2
+      with: 
+        name: osx-x64
+        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/osx-x64/        
 
