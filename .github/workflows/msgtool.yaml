@@ -65,15 +65,16 @@ jobs:
       uses: actions/upload-artifact@v2
       with: 
         name: win-x64
-        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/win-x64/
+        path: /home/runner/work/msgtool/msgtool/src/azmsg/bin/Release/net5.0/publish/win-x64/
     - name: Upload linuxx64 artifacts
       uses: actions/upload-artifact@v2
       with: 
         name: linux-x64
-        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/win-x64/        
+        path: /home/runner/work/msgtool/msgtool/src/azmsg/bin/Release/net5.0/publish/linux-x64/       
     - name: Upload osx-x64 artifacts
       uses: actions/upload-artifact@v2
       with: 
         name: osx-x64
-        path: /home/runner/work/msgtool/bin/Release/net5.0/publish/osx-x64/        
+        path: /home/runner/work/msgtool/msgtool/src/azmsg/bin/Release/net5.0/publish/osx-x64/
+      
 
