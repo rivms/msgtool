@@ -114,7 +114,7 @@ namespace azmsg.iothub
         }
 
 
-        public async Task SimulateMultipleTemperatureSensors(string[] deviceContext, int messageDelay, int n, string pattern, string patternPeriod)
+        public async Task SimulateMultipleTemperatureSensors(string[] deviceContext, int messageDelay, int n, string pattern, string patternPeriod, OutputFormat of)
         {
             var deviceSimulators = new IDeviceTelemetrySimulator[deviceContext.Length];
             var deviceTemperature = new IEnumerator<double>[deviceContext.Length];
@@ -140,7 +140,12 @@ namespace azmsg.iothub
                 }
 
                 int messageCount = 0;
-                Console.WriteLine("TimeStamp,Sensor,Telemetry");
+
+                if (of == OutputFormat.Csv)
+                {
+                    Console.WriteLine("TimeStamp,Sensor,Telemetry");
+                }
+
                 while (true)
                 {
                     for (int i = 0; i < deviceContext.Length; i++)
@@ -153,10 +158,18 @@ namespace azmsg.iothub
                             Temperature = temperature
                         };
 
-                        //var messageString = JsonSerializer.Serialize(dataPoint);                        
-                        var message = string.Format("{0},{1},{2}", DateTime.Now, deviceContext[i], temperature);
-                        //await Device2CloudMessage(messageString, deviceClients[i], "UTF-8", "application/json", deviceContext[i]);
-                        await Device2CloudMessage(message, deviceClients[i], "UTF-8", "application/json", null, "{1}");
+                        if (of == OutputFormat.Json)
+                        {
+                            var messageString = JsonSerializer.Serialize(dataPoint);
+                            await Device2CloudMessage(messageString, deviceClients[i], "UTF-8", "application/json", deviceContext[i]);
+                        }
+                        else if (of == OutputFormat.Csv)
+                        {
+                            var message = string.Format("{0},{1},{2}", DateTime.Now, deviceContext[i], temperature);
+                            var dc = deviceClients[i];
+                            await Device2CloudMessage(message, deviceClients[i], "UTF-8", "application/json", null, "{1}");
+                        }
+                        
                     }
 
                     if (n > 0)
@@ -314,7 +327,7 @@ namespace azmsg.iothub
             }
             catch (Exception ex)
             {
-                //Console.WriteLine($"Error sending message: {ex}");
+                Console.WriteLine($"Error sending message: {ex}");
                 throw;
             }
             

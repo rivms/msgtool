@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Binding;
 using System.CommandLine.Invocation;
 using System.ComponentModel.Design;
 //using System.CommandLine.DragonFruit;
@@ -22,6 +23,13 @@ using System.Threading.Tasks;
 
 namespace azmsg.iothub
 {
+
+    public enum OutputFormat
+    {
+        Csv,
+        Json
+    }
+
     class IoTHubCommandController : ICommandController
     {
 
@@ -44,6 +52,10 @@ namespace azmsg.iothub
                 return config.CurrentIoTHubContext;
             }
         }
+
+        static ICommandHandler Create<T1, T2, T3, T4, T5, T6, T7, T8>(
+            Func<T1, T2, T3, T4, T5, T6, T7, T8, Task> action) =>
+            HandlerDescriptor.FromDelegate(action).GetCommandHandler();
 
         public Command CreateCommand()
         {
@@ -99,7 +111,9 @@ namespace azmsg.iothub
             simulateCommand.Add(new Option<string[]>("--device-context", "List of context names to generate simulated data for. Separate context names with spaces"));
             simulateCommand.Add(new Option<string>("--pattern", () => { return "none"; }, "Supported patterns: [\"none\", \"sine\"]"));
             simulateCommand.Add(new Option<string>("--pattern-period", "Cycle time for pattern generator"));
-            simulateCommand.Handler = CommandHandler.Create<string, int, int, string, string[], string, string>(SimulateDevice);
+            //simulateCommand.Add(new Option<string>("--output", () => { return "csv"; }, "Supported output formats: [\"csv\", \"json\"]. Default: csv"));
+            simulateCommand.Add(new Option<string>("--output", () => { return "json"; }, "Supported output formats: [\"csv\", \"json\"]. Default: json"));
+            simulateCommand.Handler = Create<string, int, int, string, string[], string, string, string>(SimulateDevice);
             iothubCommand.Add(simulateCommand);
 
             
@@ -125,8 +139,25 @@ namespace azmsg.iothub
             }            
         }
 
-        public async Task SimulateDevice(string deviceType, int messageDelay, int n, string caFile, string[] deviceContext, string pattern, string patternPeriod)
+        public async Task SimulateDevice(string deviceType, int messageDelay, int n, string caFile, string[] deviceContext, string pattern, string patternPeriod, string output)
         {
+            bool isJson = String.Compare(output, "json", true) == 0;
+            bool isCsv = String.Compare(output, "csv", true) == 0;
+
+            OutputFormat of;
+
+            if (isJson)
+            {
+                of = OutputFormat.Json;
+            } else if (isCsv)
+            {
+                of = OutputFormat.Csv;
+            }
+            else
+            {
+                Console.WriteLine($"No matching output format: {output}");
+                return;
+            }
             
             var producer = new IoTHubProducerCommands(CurrentContext, service);
 
@@ -147,7 +178,7 @@ namespace azmsg.iothub
                 }
                 else
                 {
-                    await producer.SimulateMultipleTemperatureSensors(deviceContext, messageDelay, n, pattern, patternPeriod);
+                    await producer.SimulateMultipleTemperatureSensors(deviceContext, messageDelay, n, pattern, patternPeriod, of);
                 }
                 
             }

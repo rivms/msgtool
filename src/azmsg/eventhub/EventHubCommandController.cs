@@ -24,6 +24,15 @@ namespace azmsg.eventhub
             }
         }
 
+        private string CurrentContextName
+        {
+            get
+            {
+                var config = service.LoadConfig();
+                return config.CurrentEventHubContext;
+            }
+        }
+
         public EventHubCommandController(ConfigService service)
         {
             this.service = service;
@@ -73,22 +82,31 @@ namespace azmsg.eventhub
 
             // simulate
             var simulateCommand = new Command("simulate");
-            simulateCommand.Add(new Option<string>("--device-type", () => { return "temperature"; }, "Only support simulated device of type Temperature"));
-            simulateCommand.Add(new Option<int>("--message-delay", () => { return 5000; }, "Delay between messages in milliseconds. Default 5 seconds"));
+            simulateCommand.Add(new Option<string>("--device-type", () => { return "temperature"; }, "Supported types: [\"temperature\", \"temperature_battery\"]"));
+            simulateCommand.Add(new Option<int>("--message-delay", () => { return 5000; }, "Delay between messages in milliseconds. Default 5 seconds (5000 milliseconds)"));
             simulateCommand.Add(new Option<int>("--n", () => { return -1; }, "Number of messages to send. Default is unbounded"));
-            simulateCommand.Handler = CommandHandler.Create<string, int, int>(SimulateDevice);
+            simulateCommand.Add(new Option<string>("--pattern-period", "Cycle time for pattern generator"));
+            simulateCommand.Handler = CommandHandler.Create<string, int, int, int>(SimulateDevice);
             eventhubCommand.Add(simulateCommand);
 
 
             return eventhubCommand;
         }
 
-        public async Task SimulateDevice(string deviceType, int messageDelay, int n)
+        public async Task SimulateDevice(string deviceType, int messageDelay, int n, int patternPeriod)
         {
             var producer = new EventHubProducerCommands(CurrentContext, service);
             if (string.Compare(deviceType, "temperature", true)==0)
             {
                 await producer.SimulateTemperatureSensor(messageDelay, n);
+            }
+            else if (string.Compare(deviceType, "temperature_battery", true) == 0)
+            {                
+                await producer.SimulateTemperatureBattery(messageDelay, n, CurrentContextName, patternPeriod);
+            }
+            else 
+            {
+                Console.WriteLine($"No matching device type: {deviceType}");
             }
             await Task.CompletedTask;
         }
